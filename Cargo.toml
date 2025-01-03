@@ -1,0 +1,14 @@
+[package]
+name = "cookie_refuser"
+description = "A simple web extension that refuse optional cookies."
+repository = "https://github.com/mdevolde/cookie-refuser"
+license = "MIT"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+wasm-bindgen = "0.2.99"
+web-sys = { version = "0.3.76", features = ["Window", "Document", "HtmlCollection", "HtmlElement", "NodeList", "ShadowRoot", "MutationObserver", "MutationObserverInit", "MutationRecord"] }
+
+[lib]
+crate-type = ["cdylib"]
