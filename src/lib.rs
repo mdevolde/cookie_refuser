@@ -6,6 +6,7 @@ use wasm_bindgen_futures::spawn_local;
 use web_sys::{window, HtmlElement, MutationObserver, MutationObserverInit};
 
 const LOCAL_STORAGE_KEY: &str = "cookie_refuser_click_count";
+const MAX_CLICKS: usize = 200;
 
 macro_rules! click_if_contains {
     ($button:expr, $words:expr, $click_counter:expr) => {
@@ -16,7 +17,7 @@ macro_rules! click_if_contains {
                 .to_lowercase()
                 .contains(word)
             {
-                if *$click_counter.borrow() < 10 {
+                if *$click_counter.borrow() < MAX_CLICKS {
                     $button.click();
                     *$click_counter.borrow_mut() += 1;
 
@@ -69,12 +70,17 @@ fn traverse_dom(
     wordlist: Rc<Vec<String>>,
     click_counter: Rc<RefCell<usize>>,
 ) -> Result<(), JsValue> {
-    if *click_counter.borrow() >= 10 {
+    if *click_counter.borrow() >= MAX_CLICKS {
         return Ok(());
     }
 
     let tag_name = element.tag_name().to_lowercase();
-    if tag_name.contains("button") || element.get_attribute("role").unwrap_or_default() == "button"
+    if tag_name.contains("button")
+        || element.get_attribute("role").unwrap_or_default() == "button"
+        || element
+            .get_attribute("class")
+            .unwrap_or_default()
+            .contains("button")
     {
         click_if_contains!(element, wordlist, click_counter);
     }
@@ -119,7 +125,7 @@ fn observe_dom_changes(
             for mutation in mutations.iter() {
                 let added_nodes = mutation.added_nodes();
                 for i in 0..added_nodes.length() {
-                    if *click_counter.borrow() >= 10 {
+                    if *click_counter.borrow() >= MAX_CLICKS {
                         return;
                     }
 

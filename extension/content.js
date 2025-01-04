@@ -8,4 +8,11 @@
         await init();
         run(wordlist);
     });
+
+    chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
+        if (message.action === "reset_counter") {
+            window.localStorage.removeItem("cookie_refuser_click_count");
+            sendResponse({ status: "Counter has been reset!" });
+        }
+    });
 })();
