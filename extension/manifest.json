@@ -6,7 +6,7 @@
     "description": "A simple web extension that refuse optional cookies.",
     "author": "Martin Devolder",
     "offline_enabled": false,
-    "permissions": ["scripting", "activeTab"],
+    "permissions": ["scripting", "activeTab", "storage"],
     "host_permissions": ["<all_urls>"],
     "content_security_policy": {
         "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';"
@@ -21,6 +21,7 @@
         "128": "icons/icon.png"
     },
     "action": {
+        "default_popup": "popup.html",
         "default_icon": {
             "16": "icons/icon.png",
             "48": "icons/icon.png",
