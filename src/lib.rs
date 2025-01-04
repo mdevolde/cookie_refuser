@@ -6,10 +6,9 @@ use wasm_bindgen_futures::spawn_local;
 use web_sys::{window, HtmlElement, MutationObserver, MutationObserverInit};
 
 const LOCAL_STORAGE_KEY: &str = "cookie_refuser_click_count";
-const MAX_CLICKS: usize = 200;
 
 macro_rules! click_if_contains {
-    ($button:expr, $words:expr, $click_counter:expr) => {
+    ($button:expr, $words:expr, $click_counter:expr, $max_clicks:expr) => {
         $words.iter().for_each(|word| {
             if $button
                 .text_content()
@@ -17,7 +16,7 @@ macro_rules! click_if_contains {
                 .to_lowercase()
                 .contains(word)
             {
-                if *$click_counter.borrow() < MAX_CLICKS {
+                if *$click_counter.borrow() < $max_clicks {
                     $button.click();
                     *$click_counter.borrow_mut() += 1;
 
@@ -40,7 +39,7 @@ macro_rules! click_if_contains {
 }
 
 #[wasm_bindgen]
-pub fn run(wordlist: JsValue) -> Result<(), JsValue> {
+pub fn run(wordlist: JsValue, max_clicks: usize) -> Result<(), JsValue> {
     if let Some(window) = window() {
         if let Some(document) = window.document() {
             if let Some(body) = document.body() {
@@ -56,8 +55,8 @@ pub fn run(wordlist: JsValue) -> Result<(), JsValue> {
                     .unwrap_or(0);
 
                 let click_counter = Rc::new(RefCell::new(initial_count));
-                traverse_dom(&body, Rc::clone(&wordlist), Rc::clone(&click_counter))?;
-                observe_dom_changes(&body, Rc::clone(&wordlist), Rc::clone(&click_counter))?;
+                traverse_dom(&body, Rc::clone(&wordlist), Rc::clone(&click_counter), max_clicks)?;
+                observe_dom_changes(&body, Rc::clone(&wordlist), Rc::clone(&click_counter), max_clicks)?;
             }
         }
     }
@@ -69,8 +68,9 @@ fn traverse_dom(
     element: &HtmlElement,
     wordlist: Rc<Vec<String>>,
     click_counter: Rc<RefCell<usize>>,
+    max_clicks: usize,
 ) -> Result<(), JsValue> {
-    if *click_counter.borrow() >= MAX_CLICKS {
+    if *click_counter.borrow() >= max_clicks {
         return Ok(());
     }
 
@@ -82,7 +82,7 @@ fn traverse_dom(
             .unwrap_or_default()
             .contains("button")
     {
-        click_if_contains!(element, wordlist, click_counter);
+        click_if_contains!(element, wordlist, click_counter, max_clicks);
     }
 
     let children = element.children();
@@ -93,6 +93,7 @@ fn traverse_dom(
                     &html_element,
                     Rc::clone(&wordlist),
                     Rc::clone(&click_counter),
+                    max_clicks
                 )?;
             }
         }
@@ -107,6 +108,7 @@ fn traverse_dom(
                         &html_element,
                         Rc::clone(&wordlist),
                         Rc::clone(&click_counter),
+                        max_clicks
                     )?;
                 }
             }
@@ -119,13 +121,14 @@ fn observe_dom_changes(
     body: &HtmlElement,
     wordlist: Rc<Vec<String>>,
     click_counter: Rc<RefCell<usize>>,
+    max_clicks: usize,
 ) -> Result<(), JsValue> {
     let closure = Closure::wrap(Box::new(
         move |mutations: Vec<web_sys::MutationRecord>, _observer: MutationObserver| {
             for mutation in mutations.iter() {
                 let added_nodes = mutation.added_nodes();
                 for i in 0..added_nodes.length() {
-                    if *click_counter.borrow() >= MAX_CLICKS {
+                    if *click_counter.borrow() >= max_clicks {
                         return;
                     }
 
@@ -135,6 +138,7 @@ fn observe_dom_changes(
                                 &html_element,
                                 Rc::clone(&wordlist),
                                 Rc::clone(&click_counter),
+                                max_clicks
                             )
                             .expect_throw("Failed to traverse DOM");
                         }

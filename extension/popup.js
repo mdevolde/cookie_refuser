@@ -1,19 +1,24 @@
 document.addEventListener("DOMContentLoaded", () => {
     const wordList = document.getElementById("word-list");
+    const maxClicksInput = document.getElementById("max-clicks");
     const saveButton = document.getElementById("save");
-    const status = document.getElementById("status");
     const resetButton = document.getElementById("reset");
+    const status = document.getElementById("status");
 
-    chrome.storage.local.get(["words"], (result) => {
+    chrome.storage.local.get(["words", "maxClicks"], (result) => {
         if (result.words) {
             wordList.value = result.words.join("\n");
+        }
+        if (result.maxClicks) {
+            maxClicksInput.value = result.maxClicks;
         }
     });
 
     saveButton.addEventListener("click", () => {
         const words = wordList.value.split("\n").map((word) => word.trim()).filter((word) => word !== "");
-        chrome.storage.local.set({ words }, () => {
-            status.textContent = "Mots enregistrés !";
+        const maxClicks = parseInt(maxClicksInput.value, 10) || 200;
+        chrome.storage.local.set({ words, maxClicks }, () => {
+            status.textContent = "Configuration saved!";
             setTimeout(() => (status.textContent = ""), 2000);
         });
     });
