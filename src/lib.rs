@@ -7,15 +7,35 @@ use web_sys::{window, HtmlElement, MutationObserver, MutationObserverInit};
 
 const LOCAL_STORAGE_KEY: &str = "cookie_refuser_click_count";
 
+/// A struct representing a tool that interacts with DOM elements and automatically clicks
+/// buttons containing specific words, up to a defined maximum number of clicks.
 #[wasm_bindgen]
 pub struct CookieRefuser {
+    /// A list of words to look for in button elements.
     wordlist: Rc<Vec<String>>,
+    /// A counter for the number of button clicks performed.
     click_counter: Rc<RefCell<usize>>,
+    /// The maximum number of clicks allowed.
     max_clicks: usize,
 }
 
 #[wasm_bindgen]
 impl CookieRefuser {
+    /// Creates a new instance of `CookieRefuser`.
+    ///
+    /// # Parameters
+    /// - `wordlist`: A `JsValue` representing a list of words to look for in button elements.
+    /// - `max_clicks`: The maximum number of button clicks allowed.
+    ///
+    /// # Returns
+    /// - `Ok(CookieRefuser)` if the initialization succeeds.
+    /// - `Err(JsValue)` if any error occurs, such as issues with parsing the word list or accessing local storage.
+    ///
+    /// # Example
+    /// ```rust
+    /// let wordlist = JsValue::from_serde(&vec!["accept", "agree", "allow"]).unwrap();
+    /// let cookie_refuser = CookieRefuser::new(wordlist, 10).unwrap();
+    /// ```
     #[wasm_bindgen(constructor)]
     pub fn new(wordlist: JsValue, max_clicks: usize) -> Result<CookieRefuser, JsValue> {
         let vec_wordlist: Vec<String> = from_value(wordlist)?;
@@ -38,6 +58,16 @@ impl CookieRefuser {
         })
     }
 
+    /// Starts the `CookieRefuser` to search for and click buttons in the DOM.
+    ///
+    /// # Returns
+    /// - `Ok(())` if the process starts successfully.
+    /// - `Err(JsValue)` if there are issues interacting with the DOM.
+    ///
+    /// # Example
+    /// ```rust
+    /// cookie_refuser.run().unwrap();
+    /// ```
     pub fn run(&self) -> Result<(), JsValue> {
         if let Some(window) = window() {
             if let Some(document) = window.document() {
@@ -50,6 +80,14 @@ impl CookieRefuser {
         Ok(())
     }
 
+    /// Recursively traverses the DOM to find and click eligible buttons.
+    ///
+    /// # Parameters
+    /// - `element`: A reference to an `HtmlElement` to traverse.
+    ///
+    /// # Returns
+    /// - `Ok(())` if traversal completes successfully.
+    /// - `Err(JsValue)` if any DOM interaction fails.
     fn traverse_dom(&self, element: &HtmlElement) -> Result<(), JsValue> {
         if *self.click_counter.borrow() >= self.max_clicks {
             return Ok(());
@@ -88,6 +126,14 @@ impl CookieRefuser {
         Ok(())
     }
 
+    /// Observes changes to the DOM and reacts to newly added nodes.
+    ///
+    /// # Parameters
+    /// - `body`: The root `HtmlElement` to observe.
+    ///
+    /// # Returns
+    /// - `Ok(())` if observation starts successfully.
+    /// - `Err(JsValue)` if observer creation fails.
     fn observe_dom_changes(&self, body: &HtmlElement) -> Result<(), JsValue> {
         let wordlist = Rc::clone(&self.wordlist);
         let click_counter = Rc::clone(&self.click_counter);
@@ -129,6 +175,10 @@ impl CookieRefuser {
         Ok(())
     }
 
+    /// Clicks a button if its text contains any of the words in the wordlist.
+    ///
+    /// # Parameters
+    /// - `button`: The `HtmlElement` representing the button.
     fn click_if_contains(&self, button: &HtmlElement) {
         for word in self.wordlist.iter() {
             if button
