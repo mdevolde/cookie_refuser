@@ -3,15 +3,17 @@ document.addEventListener("DOMContentLoaded", () => {
     const maxClicksInput = document.getElementById("max-clicks");
     const saveButton = document.getElementById("save");
     const resetButton = document.getElementById("reset");
+    const toggle = document.getElementById('disable-extension-toggle')
     const status = document.getElementById("status");
 
-    chrome.storage.local.get(["words", "maxClicks"], (result) => {
+    chrome.storage.local.get(["words", "maxClicks", "extensionEnabled"], (result) => {
         if (result.words) {
             wordList.value = result.words.join("\n");
         }
         if (result.maxClicks) {
             maxClicksInput.value = result.maxClicks;
         }
+        toggle.checked = result.extensionEnabled !== undefined ? result.extensionEnabled : true;
     });
 
     saveButton.addEventListener("click", () => {
@@ -44,4 +46,12 @@ document.addEventListener("DOMContentLoaded", () => {
             setTimeout(() => (status.textContent = ""), 2000);
         }
     }
+
+    toggle.addEventListener('change', () => {
+        const isEnabled = toggle.checked;
+        chrome.storage.local.set({ extensionEnabled: isEnabled }, () => {
+            document.getElementById('status').textContent = "Status saved!";
+            setTimeout(() => (status.textContent = ""), 2000);
+        });
+    });
 });

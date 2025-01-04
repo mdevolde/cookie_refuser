@@ -8,6 +8,7 @@
 </head>
 <body>
     <h1>Cookie refuser</h1>
+    <p id="status"></p>
     <label for="word-list">Words to click on:</label>
     <textarea id="word-list" rows="10" cols="30"></textarea>
     <br>
@@ -16,7 +17,13 @@
     <br>
     <button id="save">Register</button>
     <button id="reset">Reset this page status</button>
-    <p id="status"></p>
+    <div class="toggle-container">
+        <label class="switch" for="disable-extension-toggle">
+            <input type="checkbox" id="disable-extension-toggle" aria-labelledby="disable-extension-toggle">
+            <span class="slider"></span>
+        </label>
+        <span id="toggle-label">Extension status</span>
+    </div>
     <script src="popup.js"></script>
 </body>
 </html>

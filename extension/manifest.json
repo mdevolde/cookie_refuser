@@ -16,16 +16,18 @@
         "service_worker": "background.js"
     },
     "icons": {
-        "16": "icons/icon.png",
-        "48": "icons/icon.png",
-        "128": "icons/icon.png"
+        "16": "icons/16.png",
+        "48": "icons/48.png",
+        "128": "icons/128.png",
+        "635": "icons/635.png"
     },
     "action": {
         "default_popup": "popup.html",
         "default_icon": {
-            "16": "icons/icon.png",
-            "48": "icons/icon.png",
-            "128": "icons/icon.png"
+            "16": "icons/16.png",
+            "48": "icons/48.png",
+            "128": "icons/128.png",
+            "635": "icons/635.png"
         }
     },
     "web_accessible_resources": [
