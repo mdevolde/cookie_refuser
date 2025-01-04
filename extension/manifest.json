@@ -2,7 +2,7 @@
     "manifest_version": 3,
     "name": "Cookie Refuser",
     "short_name": "Cookie Refuser",
-    "version": "1.0",
+    "version": "1.1",
     "description": "A simple web extension that refuse optional cookies.",
     "author": "Martin Devolder",
     "offline_enabled": false,

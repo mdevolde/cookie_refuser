@@ -100,6 +100,10 @@ impl CookieRefuser {
                 .get_attribute("class")
                 .unwrap_or_default()
                 .contains("button")
+            || element
+                .get_attribute("class")
+                .unwrap_or_default()
+                .contains("btn")
         {
             self.click_if_contains(element);
         }
