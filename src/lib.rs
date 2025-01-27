@@ -5,6 +5,13 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::spawn_local;
 use web_sys::{window, HtmlElement, MutationObserver, MutationObserverInit};
 
+pub mod button_data;
+use button_data::ButtonData;
+pub mod server;
+use server::send_to_server;
+pub mod utils;
+use utils::create_click_handler;
+
 const LOCAL_STORAGE_KEY: &str = "cookie_refuser_click_count";
 
 /// A struct representing a tool that interacts with DOM elements and automatically clicks
@@ -72,6 +79,7 @@ impl CookieRefuser {
         if let Some(window) = window() {
             if let Some(document) = window.document() {
                 if let Some(body) = document.body() {
+                    self.observe_user_clicks()?;
                     self.traverse_dom(&body)?;
                     self.observe_dom_changes(&body)?;
                 }
@@ -105,7 +113,15 @@ impl CookieRefuser {
                 .unwrap_or_default()
                 .contains("btn")
         {
-            self.click_if_contains(element);
+            let element_clone = element.clone();
+            spawn_local(async move {
+                if let Err(e) = send_to_server(&ButtonData::from_element(&element_clone)).await {
+                    web_sys::console::error_1(&JsValue::from_str(&format!(
+                        "Sending error : {:?}",
+                        e
+                    )));
+                }
+            });
         }
 
         let children = element.children();
@@ -118,6 +134,7 @@ impl CookieRefuser {
         }
 
         if let Some(shadow_root) = element.shadow_root() {
+            self.observe_shadow_root_clicks(&shadow_root)?;
             let shadow_elements = shadow_root.query_selector_all("*")?;
             for i in 0..shadow_elements.length() {
                 if let Some(shadow_element) = shadow_elements.item(i) {
@@ -179,36 +196,42 @@ impl CookieRefuser {
         Ok(())
     }
 
-    /// Clicks a button if its text contains any of the words in the wordlist.
+    /// Observes user clicks on the document.
+    /// This method is used to send data to the server when a user clicks on a button.
+    ///
+    /// Returns
+    /// - `Ok(())` if the observer is successfully set up.
+    /// - `Err(JsValue)` if the observer setup fails.
+    fn observe_user_clicks(&self) -> Result<(), JsValue> {
+        let click_handler = create_click_handler();
+
+        if let Some(document) = window().and_then(|w| w.document()) {
+            document.add_event_listener_with_callback(
+                "click",
+                click_handler.as_ref().unchecked_ref(),
+            )?;
+            click_handler.forget();
+        }
+
+        Ok(())
+    }
+
+    /// Observes clicks on a shadow root.
+    /// This method is used to send data to the server when a user clicks on a button inside a shadow root.
     ///
     /// # Parameters
-    /// - `button`: The `HtmlElement` representing the button.
-    fn click_if_contains(&self, button: &HtmlElement) {
-        for word in self.wordlist.iter() {
-            if button
-                .text_content()
-                .unwrap_or_default()
-                .to_lowercase()
-                .contains(word)
-            {
-                if *self.click_counter.borrow() < self.max_clicks {
-                    button.click();
-                    *self.click_counter.borrow_mut() += 1;
+    /// - `shadow_root`: A reference to the `ShadowRoot` to observe.
+    ///
+    /// # Returns
+    /// - `Ok(())` if the observer is successfully set up.
+    /// - `Err(JsValue)` if the observer setup fails.
+    fn observe_shadow_root_clicks(&self, shadow_root: &web_sys::ShadowRoot) -> Result<(), JsValue> {
+        let click_handler = create_click_handler();
 
-                    let new_count = *self.click_counter.borrow();
-                    spawn_local(async move {
-                        if let Some(window) = web_sys::window() {
-                            if let Ok(storage) = window.local_storage() {
-                                if let Some(storage) = storage {
-                                    storage
-                                        .set_item(LOCAL_STORAGE_KEY, &new_count.to_string())
-                                        .unwrap();
-                                }
-                            }
-                        }
-                    });
-                }
-            }
-        }
+        shadow_root
+            .add_event_listener_with_callback("click", click_handler.as_ref().unchecked_ref())?;
+        click_handler.forget();
+
+        Ok(())
     }
 }
